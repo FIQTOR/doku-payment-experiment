@@ -133,13 +133,16 @@ export default function PaymentDetailModal({ open, onClose, transaction, onUpdat
           {t.qrContent ? (
             <>
               <div className="rounded-2xl border border-slate-200 bg-white p-3 shadow-sm">
-                {t.qrImage ? (
-                  <img src={t.qrImage} alt="QRIS code" className="h-48 w-48" />
-                ) : (
-                  <div className="grid h-48 w-48 place-items-center text-slate-300">
-                    <IconQrcode size={64} stroke={1.2} />
-                  </div>
-                )}
+                {/* Prefer the inline image from the create response; otherwise
+                    fetch the QR SVG from the API so it always renders. */}
+                <img
+                  src={t.qrImage || `/api/payments/${t.invoiceNumber}/qr.svg`}
+                  alt="QRIS code"
+                  className="h-48 w-48"
+                  onError={(e) => {
+                    e.currentTarget.style.display = 'none';
+                  }}
+                />
               </div>
               <div className="mt-3 flex gap-2">
                 <button
