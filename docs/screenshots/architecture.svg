@@ -1,0 +1,39 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1000" height="380" viewBox="0 0 1000 380" role="img" aria-label="Architecture">
+  <rect width="1000" height="380" fill="#f8fafc"/>
+  <g font-family="Inter, Arial, sans-serif">
+    <!-- Frontend box -->
+    <rect x="40" y="120" width="220" height="140" rx="16" fill="#ffffff" stroke="#1a73e8" stroke-width="2"/>
+    <text x="150" y="175" text-anchor="middle" font-size="22" font-weight="700" fill="#0d4187">React 19</text>
+    <text x="150" y="205" text-anchor="middle" font-size="15" fill="#64748b">Vite · Tailwind v4</text>
+    <text x="150" y="230" text-anchor="middle" font-size="15" fill="#64748b">:5174</text>
+
+    <!-- Backend box -->
+    <rect x="390" y="110" width="220" height="160" rx="16" fill="#ffffff" stroke="#1a73e8" stroke-width="2"/>
+    <text x="500" y="160" text-anchor="middle" font-size="22" font-weight="700" fill="#0d4187">Express</text>
+    <text x="500" y="188" text-anchor="middle" font-size="15" fill="#64748b">HMAC-SHA256 signing</text>
+    <text x="500" y="211" text-anchor="middle" font-size="15" fill="#64748b">store · SSE · webhooks</text>
+    <text x="500" y="240" text-anchor="middle" font-size="15" fill="#64748b">:4010</text>
+
+    <!-- DOKU box -->
+    <rect x="740" y="120" width="220" height="140" rx="16" fill="#ffffff" stroke="#06b6d4" stroke-width="2"/>
+    <text x="850" y="175" text-anchor="middle" font-size="22" font-weight="700" fill="#0891b2">DOKU (Jokul)</text>
+    <text x="850" y="205" text-anchor="middle" font-size="15" fill="#64748b">QRIS · Checkout</text>
+    <text x="850" y="230" text-anchor="middle" font-size="15" fill="#64748b">api-sandbox.doku.com</text>
+
+    <!-- arrows -->
+    <line x1="260" y1="185" x2="385" y2="185" stroke="#334155" stroke-width="2.5" marker-end="url(#a)"/>
+    <line x1="610" y1="185" x2="735" y2="185" stroke="#334155" stroke-width="2.5" marker-end="url(#a)"/>
+    <text x="322" y="175" text-anchor="middle" font-size="13" fill="#475569">/api/*</text>
+    <text x="672" y="175" text-anchor="middle" font-size="13" fill="#475569">signed HTTPS</text>
+
+    <!-- webhook arrow back -->
+    <path d="M850 260 C850 330 500 330 500 275" fill="none" stroke="#0ea5e9" stroke-width="2.5" stroke-dasharray="6 5" marker-end="url(#a)"/>
+    <text x="672" y="345" text-anchor="middle" font-size="13" fill="#0891b2">async webhook notification</text>
+
+    <defs>
+      <marker id="a" markerWidth="10" markerHeight="10" refX="8" refY="3" orient="auto">
+        <path d="M0,0 L8,3 L0,6 z" fill="#334155"/>
+      </marker>
+    </defs>
+  </g>
+</svg>

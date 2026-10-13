@@ -1,0 +1,84 @@
+@import 'tailwindcss';
+
+/* ------------------------------------------------------------------
+   Tailwind CSS v4 — design tokens live directly in CSS via @theme.
+   These become utilities like bg-doku, text-doku, etc.
+------------------------------------------------------------------ */
+@theme {
+  /* DOKU brand palette (DOKU blue / navy) */
+  --color-doku-50: #eef6ff;
+  --color-doku-100: #d9ecff;
+  --color-doku-200: #bcdcff;
+  --color-doku-300: #8ec4ff;
+  --color-doku-400: #599fff;
+  --color-doku-500: #1a73e8;
+  --color-doku-600: #0b5fce;
+  --color-doku-700: #0a4ca6;
+  --color-doku-800: #0d4187;
+  --color-doku-900: #11386e;
+
+  /* Accent (DOKU teal / cyan gradient partner) */
+  --color-accent-400: #22d3ee;
+  --color-accent-500: #06b6d4;
+  --color-accent-600: #0891b2;
+
+  --font-sans: 'Inter', ui-sans-serif, system-ui, -apple-system, 'Segoe UI', sans-serif;
+
+  --radius-xl2: 1.25rem;
+
+  --shadow-card: 0 1px 2px rgba(16, 24, 40, 0.04), 0 8px 24px -8px rgba(16, 24, 40, 0.12);
+}
+
+/* Base tweaks */
+html,
+body,
+#root {
+  height: 100%;
+}
+
+body {
+  @apply bg-slate-50 text-slate-800 antialiased;
+}
+
+/* Thin, subtle scrollbar */
+::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+::-webkit-scrollbar-thumb {
+  @apply rounded-full bg-slate-300;
+}
+::-webkit-scrollbar-thumb:hover {
+  @apply bg-slate-400;
+}
+
+/* Pulsing "live" dot for the status badge */
+@keyframes pulse-ring {
+  0% {
+    box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.5);
+  }
+  70% {
+    box-shadow: 0 0 0 8px rgba(16, 185, 129, 0);
+  }
+  100% {
+    box-shadow: 0 0 0 0 rgba(16, 185, 129, 0);
+  }
+}
+.live-dot {
+  animation: pulse-ring 2s infinite;
+}
+
+/* Fade-in for list items / cards */
+@keyframes fade-in-up {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+.animate-fade-in-up {
+  animation: fade-in-up 0.35s ease-out both;
+}

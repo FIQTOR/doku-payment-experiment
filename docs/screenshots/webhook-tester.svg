@@ -1,0 +1,50 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1000" height="480" viewBox="0 0 1000 480" role="img" aria-label="Webhook tester">
+  <rect width="1000" height="480" fill="#f1f5f9"/>
+  <g font-family="Inter, Arial, sans-serif">
+    <!-- left card -->
+    <rect x="40" y="40" width="440" height="400" rx="18" fill="#ffffff"/>
+    <circle cx="76" cy="80" r="18" fill="#ede9fe"/>
+    <text x="76" y="86" text-anchor="middle" font-size="18" fill="#7c3aed">📣</text>
+    <text x="108" y="78" font-size="15" font-weight="700" fill="#0f172a">Notification endpoint</text>
+    <text x="108" y="98" font-size="12" fill="#64748b">Configure in the DOKU dashboard</text>
+
+    <rect x="66" y="126" width="388" height="44" rx="10" fill="#0f172a"/>
+    <text x="82" y="153" font-size="12" fill="#6ee7b7" font-family="monospace">http://localhost/api/webhooks/doku</text>
+
+    <text x="66" y="204" font-size="12" fill="#64748b">Method</text>
+    <text x="120" y="204" font-size="12" font-weight="700" fill="#334155" font-family="monospace">POST</text>
+    <text x="66" y="230" font-size="12" fill="#64748b">Signatures verified with HMAC-SHA256 using your</text>
+    <text x="66" y="250" font-size="12" fill="#64748b">secret key (Signature, Client-Id, Request-Id,</text>
+    <text x="66" y="270" font-size="12" fill="#64748b">Request-Timestamp).</text>
+
+    <rect x="66" y="300" width="300" height="34" rx="8" fill="#f1f5f9"/>
+    <text x="84" y="322" font-size="12" fill="#475569">✓ Use latest invoice: INV-1759…-A1B2</text>
+
+    <rect x="66" y="356" width="388" height="60" rx="12" fill="#ecfdf5" stroke="#a7f3d0"/>
+    <text x="84" y="382" font-size="12" font-weight="700" fill="#334155">HTTP 200 · accepted</text>
+    <text x="84" y="402" font-size="11" fill="#047857" font-family="monospace">{ "status": "SUCCESS" }</text>
+
+    <!-- right card -->
+    <rect x="520" y="40" width="440" height="400" rx="18" fill="#ffffff"/>
+    <text x="546" y="80" font-size="15" font-weight="700" fill="#0f172a">Test payload</text>
+    <rect x="546" y="100" width="388" height="240" rx="12" fill="#f8fafc" stroke="#e2e8f0"/>
+    <text x="566" y="128" font-size="11.5" fill="#334155" font-family="monospace">{</text>
+    <text x="580" y="150" font-size="11.5" fill="#334155" font-family="monospace">"order": {</text>
+    <text x="594" y="172" font-size="11.5" fill="#2563eb" font-family="monospace">"invoice_number": "INV-…",</text>
+    <text x="594" y="194" font-size="11.5" fill="#334155" font-family="monospace">"amount": 25000, "status": "SUCCESS"</text>
+    <text x="580" y="216" font-size="11.5" fill="#334155" font-family="monospace">},</text>
+    <text x="580" y="238" font-size="11.5" fill="#334155" font-family="monospace">"channel": { "id": "QRIS" }</text>
+    <text x="566" y="260" font-size="11.5" fill="#334155" font-family="monospace">}</text>
+
+    <rect x="546" y="360" width="280" height="46" rx="12" fill="url(#g3)"/>
+    <text x="686" y="389" text-anchor="middle" font-size="14" font-weight="700" fill="#ffffff">Send notification</text>
+    <rect x="838" y="360" width="96" height="46" rx="12" fill="#f1f5f9"/>
+    <text x="886" y="389" text-anchor="middle" font-size="13" fill="#475569">Reset</text>
+  </g>
+  <defs>
+    <linearGradient id="g3" x1="0" y1="0" x2="1" y2="0">
+      <stop offset="0" stop-color="#0b5fce"/>
+      <stop offset="1" stop-color="#06b6d4"/>
+    </linearGradient>
+  </defs>
+</svg>

@@ -1,0 +1,52 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  frontend:
+    name: Frontend (lint + build)
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: frontend
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+      - run: npm ci
+      - run: npm run lint
+      - run: npm run build
+
+  backend:
+    name: Backend (tests + smoke)
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: backend
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+          cache-dependency-path: backend/package-lock.json
+      - run: npm ci
+      - name: Syntax check all source files
+        run: |
+          for f in $(find src -name '*.js'); do node --check "$f"; done
+      - name: Run tests (Vitest)
+        run: npm test
+      - name: Boot server (smoke test, mock mode)
+        run: |
+          DOKU_MOCK_MODE=true node src/server.js &
+          sleep 3
+          curl -sf http://localhost:4010/api/webhooks/config > /dev/null
+          curl -sf http://localhost:4010/api/payments/stats > /dev/null
+          echo "backend smoke test passed"

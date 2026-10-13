@@ -1,0 +1,14 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="300" viewBox="0 0 1200 300" role="img" aria-label="DOKU Pay Experiment Lab">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#0b5fce"/>
+      <stop offset="1" stop-color="#06b6d4"/>
+    </linearGradient>
+  </defs>
+  <rect width="1200" height="300" fill="url(#bg)"/>
+  <circle cx="1050" cy="60" r="160" fill="#ffffff" opacity="0.06"/>
+  <circle cx="150" cy="260" r="120" fill="#ffffff" opacity="0.06"/>
+  <text x="80" y="140" font-family="Inter, Arial, sans-serif" font-size="72" font-weight="800" fill="#ffffff">DOKU Pay</text>
+  <text x="80" y="200" font-family="Inter, Arial, sans-serif" font-size="34" font-weight="600" fill="#d9ecff">Experiment Lab · Jokul API</text>
+  <text x="80" y="248" font-family="Inter, Arial, sans-serif" font-size="22" fill="#bcdcff">QRIS · Checkout · Refund · Disbursement · Webhooks · Live SSE dashboard</text>
+</svg>
