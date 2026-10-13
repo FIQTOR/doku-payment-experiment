@@ -3,7 +3,7 @@ import request from 'supertest';
 import crypto from 'node:crypto';
 import app from '../src/server.js';
 import * as store from '../src/store/transactions.js';
-import { bodyDigest, signHmacSha256 } from '../src/utils/signature.js';
+import { bodyDigest, signHmacSha256, snapBodyHash } from '../src/utils/signature.js';
 
 /** Helper: create a payment and return its response. */
 async function createPayment(body = { amount: 25000, description: 'test' }) {
@@ -34,6 +34,24 @@ function signedWebhook(payload, target = '/api/webhooks/doku') {
     'Request-Timestamp': timestamp,
     'Request-Target': target,
     Signature: signature,
+  } };
+}
+
+/**
+ * Helper: build a SNAP notification (X-SIGNATURE, HMAC-SHA512) for a payload.
+ */
+function snapSignedWebhook(payload, target = '/api/webhooks/doku') {
+  const rawBody = JSON.stringify(payload);
+  const timestamp = '2026-01-01T00:00:00+07:00';
+  const stringToSign = ['POST', target, '', snapBodyHash(rawBody), timestamp].join(':');
+  const signature = crypto.createHmac('sha512', 'test_secret_key').update(stringToSign, 'utf8').digest('base64');
+  return { rawBody, headers: {
+    'Content-Type': 'application/json',
+    'X-PARTNER-ID': 'TEST-CLIENT-ID',
+    'X-EXTERNAL-ID': crypto.randomUUID(),
+    'X-TIMESTAMP': timestamp,
+    'X-SIGNATURE': signature,
+    'Request-Target': target,
   } };
 }
 
@@ -292,6 +310,44 @@ describe('API integration (mock mode)', () => {
       };
       const { rawBody, headers } = signedWebhook(payload);
       await request(app).post('/api/webhooks/doku').set(headers).send(rawBody);
+      const txn = await request(app).get(`/api/payments/${ref}`);
+      expect(txn.body.data.status).toBe('SUCCESS');
+    });
+  });
+
+  describe('SNAP flavour', () => {
+    it('creates a SNAP QRIS payment and records the flavour', async () => {
+      const res = await createPayment({ amount: 20000, flavor: 'snap' });
+      expect(res.status).toBe(201);
+      expect(res.body.data.apiFlavor).toBe('snap');
+      expect(res.body.data.qrContent).toBeTruthy();
+    });
+
+    it('queries a SNAP payment using the SNAP endpoint flavour', async () => {
+      const created = await createPayment({ amount: 20000, flavor: 'snap' });
+      const ref = created.body.data.invoiceNumber;
+      const res = await request(app).post(`/api/payments/${ref}/query`);
+      expect(res.status).toBe(200);
+      expect(res.body.data.dokuResponse.responseCode).toBe('2004700');
+    });
+
+    it('refunds a SNAP payment via the SNAP refund path', async () => {
+      const created = await createPayment({ amount: 30000, flavor: 'snap' });
+      const ref = created.body.data.invoiceNumber;
+      await request(app).post(`/api/payments/${ref}/simulate`).send({ status: 'SUCCESS' });
+      const res = await request(app).post(`/api/payments/${ref}/refund`).send({});
+      expect(res.status).toBe(200);
+      expect(res.body.data.transaction.status).toBe('REFUNDED');
+    });
+
+    it('accepts a SNAP notification (X-SIGNATURE / HMAC-SHA512)', async () => {
+      const created = await createPayment({ amount: 20000, flavor: 'snap' });
+      const ref = created.body.data.invoiceNumber;
+      const payload = { originalPartnerReferenceNo: ref, latestTransactionStatus: '00' };
+      const { rawBody, headers } = snapSignedWebhook(payload);
+      const res = await request(app).post('/api/webhooks/doku').set(headers).send(rawBody);
+      expect(res.status).toBe(200);
+
       const txn = await request(app).get(`/api/payments/${ref}`);
       expect(txn.body.data.status).toBe('SUCCESS');
     });

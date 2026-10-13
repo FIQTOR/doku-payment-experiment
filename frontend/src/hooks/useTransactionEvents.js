@@ -16,6 +16,9 @@ export function useTransactionEvents({ onCreated, onUpdated } = {}) {
   }, [onCreated, onUpdated]);
 
   useEffect(() => {
+    // Allow disabling the stream (e.g. for static screenshots/SSR) via ?sse=off.
+    if (new URLSearchParams(window.location.search).get('sse') === 'off') return undefined;
+
     const es = new EventSource('/api/events');
 
     es.addEventListener('connected', () => setConnected(true));

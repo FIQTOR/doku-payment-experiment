@@ -31,6 +31,16 @@ export const config = {
     invoicePrefix: process.env.DOKU_INVOICE_PREFIX || 'INV',
     // Path to DOKU's public key (PEM) for RSA-based signature verification.
     publicKeyPath: process.env.DOKU_PUBLIC_KEY_PATH,
+    // Path to YOUR RSA private key (PEM, PKCS#8) — used to sign SNAP Get-Token
+    // requests (SHA256withRSA). Generate with `npm run gen-key`.
+    privateKeyPath: process.env.DOKU_PRIVATE_KEY_PATH,
+    // SNAP partner identifier (the client id sent as X-PARTNER-ID).
+    // Defaults to clientId when not set.
+    partnerId: process.env.DOKU_PARTNER_ID || process.env.DOKU_CLIENT_ID,
+    // CHANNEL-ID sent with SNAP QRIS requests (H2H for host-to-host).
+    channelId: process.env.DOKU_CHANNEL_ID || 'H2H',
+    // Default Direct API flavour: 'nonsnap' | 'snap'. Can be overridden per request.
+    apiFlavor: (process.env.DOKU_API_FLAVOR || 'nonsnap').toLowerCase() === 'snap' ? 'snap' : 'nonsnap',
     // Publicly reachable base URL so DOKU can deliver async notifications.
     publicBaseUrl: process.env.PUBLIC_BASE_URL || 'http://localhost:4010',
   },

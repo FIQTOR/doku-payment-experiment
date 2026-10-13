@@ -82,3 +82,43 @@ describe('mapDokuStatus', () => {
     expect(mapDokuStatus('WAT')).toBeNull();
   });
 });
+
+describe('dokuService — SNAP flavour (mock mode)', () => {
+  it('creates a SNAP QRIS transaction with terminalId and validityPeriod', async () => {
+    const res = await dokuService.createQrisTransaction({
+      invoiceNumber: 'INV-SNAP-1',
+      amount: 20000,
+      flavor: 'snap',
+      expiryMinutes: 15,
+    });
+    expect(res.responseCode).toBe('2004700');
+    expect(res.qrContent).toBeTruthy();
+    expect(res.partnerReferenceNo).toBe('INV-SNAP-1');
+    expect(res.terminalId).toBeTruthy();
+    expect(res.additionalInfo.validityPeriod).toBe('PT15M');
+  });
+
+  it('queries and cancels a SNAP QRIS transaction', async () => {
+    const q = await dokuService.queryQrisTransaction('INV-SNAP-2', 'REF-2', 'snap');
+    expect(q.latestTransactionStatus).toBe('00');
+    const c = await dokuService.cancelQrisTransaction('INV-SNAP-2', 'REF-2', 'snap');
+    expect(c.responseMessage).toBe('Successful');
+  });
+
+  it('refunds a SNAP QRIS transaction', async () => {
+    const res = await dokuService.refundSnapQrisTransaction({
+      partnerRefundNo: 'RFD-SNAP-1',
+      originalInvoiceNumber: 'INV-SNAP-3',
+      originalReferenceNo: 'REF-3',
+      amount: { value: 5000 },
+    });
+    expect(res.responseCode).toBe('2004900');
+    expect(res.refundNo).toBeTruthy();
+  });
+
+  it('issues a mock SNAP access token', async () => {
+    const tok = await dokuService.getSnapAccessToken();
+    expect(tok.accessToken).toMatch(/^mock-snap-token-/);
+    expect(tok.tokenType).toBe('Bearer');
+  });
+});

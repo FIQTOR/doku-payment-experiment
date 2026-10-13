@@ -31,12 +31,20 @@ router.get('/config', (_req, res) => {
       clientId: config.doku.clientId,
       merchantId: config.doku.merchantId,
       terminalId: config.doku.terminalId,
+      apiFlavorDefault: config.doku.apiFlavor,
+      partnerId: config.doku.partnerId,
+      channelId: config.doku.channelId,
       notificationUrl: `${config.doku.publicBaseUrl}/api/webhooks/doku`,
       disburseNotifyUrl: `${config.doku.publicBaseUrl}/api/webhooks/disburse`,
       hasSecretKey: Boolean(
         config.doku.secretKey && config.doku.secretKey !== 'change_me_secret_key',
       ),
       hasPublicKey: Boolean(loadKey(config.doku.publicKeyPath)),
+      hasPrivateKey: Boolean(loadKey(config.doku.privateKeyPath)),
+      supports: {
+        nonsnap: true,
+        snap: true,
+      },
       storage: storageLabel(),
     },
   });

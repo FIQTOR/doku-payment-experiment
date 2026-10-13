@@ -60,6 +60,7 @@ export function defineTransaction(sequelize) {
       qrContent: { type: DataTypes.TEXT, allowNull: true, field: 'qr_content' },
       qrUrl: { type: DataTypes.STRING(512), allowNull: true, field: 'qr_url' },
       checkoutUrl: { type: DataTypes.STRING(512), allowNull: true, field: 'checkout_url' },
+      apiFlavor: { type: DataTypes.STRING(16), allowNull: true, defaultValue: 'nonsnap', field: 'api_flavor' },
       validUntil: { type: DataTypes.DATE, allowNull: true, field: 'valid_until' },
       payer: { type: DataTypes.JSON, allowNull: true },
       description: { type: DataTypes.STRING(255), allowNull: true },

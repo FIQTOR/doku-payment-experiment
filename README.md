@@ -6,7 +6,7 @@
   <a href="LICENSE"><img src="https://img.shields.io/badge/license-MIT-blue.svg" alt="License: MIT"></a>
   <img src="https://img.shields.io/badge/node-%3E%3D20-brightgreen.svg" alt="Node >= 20">
   <a href="https://github.com/FIQTOR/doku-payment-experiment/actions/workflows/ci.yml"><img src="https://github.com/FIQTOR/doku-payment-experiment/actions/workflows/ci.yml/badge.svg" alt="CI"></a>
-  <img src="https://img.shields.io/badge/tests-57%20passing-success.svg" alt="Tests">
+  <img src="https://img.shields.io/badge/tests-71%20passing-success.svg" alt="Tests">
   <img src="https://img.shields.io/badge/express-4.x-000000.svg" alt="Express 4">
   <img src="https://img.shields.io/badge/react-19-61dafb.svg" alt="React 19">
   <img src="https://img.shields.io/badge/vite-8-646cff.svg" alt="Vite 8">
@@ -32,7 +32,9 @@
 ## 📚 Table of contents
 
 - [✨ Features](#-features)
+- [🖼 Screenshots](#-screenshots)
 - [🏗 Architecture](#-architecture)
+- [🧭 Direct API flavours (SNAP & non-SNAP)](#-direct-api-flavours-snap--non-snap)
 - [🧰 Tech stack](#-tech-stack)
 - [🚀 Quick start](#-quick-start)
 - [🔁 Payment lifecycle](#-payment-lifecycle)
@@ -54,9 +56,31 @@
 
 | Area | What you get |
 | --- | --- |
-| **Backend** | Express.js REST API · **DOKU Jokul HMAC-SHA256 request signing** · QRIS MPM + **Checkout** create · query / cancel · **refund** · **bank disbursement** · webhook receiver with signature verification · Server-Sent Events for live updates · zod validation · rate limiting + helmet · **in-memory or MySQL (Sequelize)** storage |
-| **Frontend** | React 19 + Vite 8 + **TailwindCSS v4** + **Tabler Icons** · dashboard with live stats · payment creator with QR preview · filterable transaction list · detail modal (QR / hosted checkout / timeline / query / cancel / refund / simulation) · **disbursement** tab (bank inquiry + transfer) · webhook tester |
-| **DX** | **Mock mode** (no network) · **`npm run doku:ping`** self-test · keypair generator · **57 automated tests** (Vitest + Supertest) · Docker Compose · hot reload · CI workflow |
+| **Backend** | Express.js REST API · **DOKU Direct API in both flavours** — non-SNAP (Jokul **HMAC-SHA256**) *and* **SNAP** (**HMAC-SHA512** transactional + **SHA256withRSA** Get-Token) · QRIS MPM + **Checkout** create · query / cancel · **refund** · **bank disbursement** · webhook receiver with signature verification · Server-Sent Events for live updates · zod validation · rate limiting + helmet · **in-memory or MySQL (Sequelize)** storage |
+| **Frontend** | React 19 + Vite 8 + **TailwindCSS v4** + **Tabler Icons** · dashboard with live stats · payment creator with QR preview + **SNAP / non-SNAP toggle** · filterable transaction list · detail modal (QR / hosted checkout / timeline / query / cancel / refund / simulation) · **disbursement** tab (bank inquiry + transfer) · webhook tester |
+| **DX** | **Mock mode** (no network) · **`npm run doku:ping`** self-test · keypair generator · **71 automated tests** (Vitest + Supertest) · Docker Compose · hot reload · CI workflow |
+
+---
+
+## 🖼 Screenshots
+
+> Real captures of the running app (backend `:4010` + frontend `:5174`) in mock
+> mode, seeded with sample transactions.
+
+### Dashboard — live stats, transactions & payment creator
+![Dashboard](docs/screenshots/dashboard.png)
+
+### Create Payment — QRIS / Checkout with SNAP · non-SNAP toggle
+![Create payment](docs/screenshots/create-payment.png)
+
+### Payment detail — QR, API flavour, timeline & experiment controls
+![Payment detail](docs/screenshots/payment-detail.png)
+
+### Webhook tester — copy the endpoint & fire sample payloads
+![Webhook tester](docs/screenshots/webhook-tester.png)
+
+### Disbursements — bank inquiry + transfer to bank
+![Disbursements](docs/screenshots/disbursements.png)
 
 ---
 
@@ -65,8 +89,37 @@
 ![Architecture](docs/screenshots/architecture.svg)
 
 The React app talks **only** to the Express backend (`/api/*`, proxied by Vite in
-dev). The backend handles all DOKU communication: Jokul request signatures,
+dev). The backend handles all DOKU communication: Jokul/SNAP request signatures,
 QRIS/Checkout calls, and webhook verification. Live updates flow back over SSE.
+
+---
+
+## 🧭 Direct API flavours (SNAP & non-SNAP)
+
+DOKU offers two Direct API integration styles. This project implements **both**
+and lets you pick per payment (QRIS). See
+[`docs/DOKU-API-MAPPING.md`](docs/DOKU-API-MAPPING.md) for the full mapping.
+
+| | **non-SNAP (Jokul classic)** | **SNAP (Bank Indonesia standard)** |
+| --- | --- | --- |
+| **Request headers** | `Client-Id`, `Request-Id`, `Request-Timestamp`, `Signature` | `X-PARTNER-ID`, `X-EXTERNAL-ID`, `X-TIMESTAMP`, `X-SIGNATURE`, `Authorization: Bearer`, `CHANNEL-ID` |
+| **Signature** | HMAC-**SHA256** over a component string | **Get-Token**: SHA256withRSA (`clientId\|timestamp`) · **transactional**: HMAC-**SHA512** (`METHOD:URL:TOKEN:HEX(SHA256(body)):TIMESTAMP`) |
+| **QRIS generate** | `POST /qris/v1/generate-qr-code` | `POST /snap-adapter/b2b/v1.0/qr/qr-mpm-generate` |
+| **QRIS query** | `POST /qris/v1/query` | `POST /snap-adapter/b2b/v1.0/qr/qr-mpm-query` |
+| **QRIS cancel** | `POST /qris/v1/cancel` | `POST /snap-adapter/b2b/v1.0/qr/qr-expire` |
+| **QRIS refund** | `POST /refund/v1/do-refund` | `POST /snap-adapter/b2b/v1.0/qr/qr-mpm-refund` |
+| **Notification** | `Client-Id`/`Request-Id`/… + HMAC-SHA256 | `X-PARTNER-ID`/`X-EXTERNAL-ID`/… + HMAC-SHA512 |
+| **Status vocab** | `SUCCESS`/`FAILED`/`PENDING`/… | `latestTransactionStatus` (`00`=success, `03`=pending, `04`=refunded, `05`=canceled, `06`=failed) |
+
+**Usage:** pass `flavor: "snap" | "nonsnap"` (default `nonsnap`) when creating a
+QRIS payment — via the API or the toggle in the **Create Payment** screen. The
+flavour is persisted and reused for query/cancel/refund.
+
+```bash
+curl -X POST http://localhost:4010/api/payments \
+  -H 'Content-Type: application/json' \
+  -d '{"amount":25000,"description":"snap order","flavor":"snap"}'
+```
 
 ---
 
@@ -144,10 +197,11 @@ Then open **<http://localhost:5174>** 🎉
 
 ---
 
-## 🔏 Signatures (Jokul)
+## 🔏 Signatures (Jokul & SNAP)
 
-DOKU Jokul signs every request with **HMAC-SHA256** over a component string. The
-backend builds the headers (`Client-Id`, `Request-Id`, `Request-Timestamp`,
+### A) non-SNAP (Jokul classic) — HMAC-SHA256
+
+The backend builds the headers (`Client-Id`, `Request-Id`, `Request-Timestamp`,
 `Signature`) and the exact minified body it transmits. The component string is:
 
 ```text
@@ -160,12 +214,34 @@ Digest:<base64(sha256(minifiedBody))>   ← omitted when there is no body
 
 `Signature: HMACSHA256=<base64(HMAC-SHA256(componentString, secretKey))>`
 
-Inbound **webhook notifications** are validated with the same scheme against the
-**raw** request bytes, using the same shared secret key. An **RSA-SHA256
-fallback** (using `DOKU_PUBLIC_KEY_PATH`) is attempted for accounts that sign
-notifications with asymmetric keys. When a real secret key is configured, a
-notification with an invalid or missing signature is **rejected with `401`** and
-the transaction is left untouched. See
+### B) SNAP — SHA256withRSA (Get-Token) + HMAC-SHA512 (transactional)
+
+**Get-Token** (`POST /authorization/v1/access-token/b2b`) is signed
+asymmetrically with your RSA private key:
+
+```text
+stringToSign = clientId + "|" + X-TIMESTAMP
+X-SIGNATURE  = base64(SHA256withRSA(privateKey, stringToSign))
+```
+
+**Transactional APIs** (and B2B2C notifications) sign with the shared secret:
+
+```text
+stringToSign = HTTPMethod : RequestTarget : AccessToken : Lowercase(HexEncode(SHA256(minify(body)))) : Timestamp
+X-SIGNATURE  = base64(HMAC-SHA512(secretKey, stringToSign))
+```
+
+Headers: `X-PARTNER-ID`, `X-EXTERNAL-ID`, `X-TIMESTAMP`, `X-SIGNATURE`,
+`Authorization: Bearer <token>`, `CHANNEL-ID`.
+
+### Webhook verification
+
+Inbound **webhook notifications** are validated against the **raw** request
+bytes: SNAP notifications via HMAC-SHA512 (`X-SIGNATURE`), non-SNAP via
+HMAC-SHA256 (`Signature`), with an **RSA-SHA256 fallback**
+(`DOKU_PUBLIC_KEY_PATH`) for asymmetric-key accounts. When a real secret key is
+configured, a notification with an invalid or missing signature is **rejected
+with `401`** and the transaction is left untouched. See
 [`docs/DOKU-API-MAPPING.md`](docs/DOKU-API-MAPPING.md) for the endpoint map.
 
 ---
@@ -372,7 +448,7 @@ cd backend
 npm test
 ```
 
-**57 tests** across 5 files:
+**71 tests** across 5 files:
 
 - `signature.test.js` — Jokul component-string + HMAC-SHA256 signing & webhook verification
 - `store.test.js` — in-memory store, events, history, stats

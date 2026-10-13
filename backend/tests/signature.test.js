@@ -3,13 +3,21 @@ import crypto from 'node:crypto';
 import {
   bodyDigest,
   buildComponentString,
+  buildSnapRequestHeaders,
+  buildSnapSignature,
+  buildSnapTokenHeaders,
+  buildSnapTokenStringToSign,
   generateKeyPair,
   hashBody,
   minifyBody,
   requestTimestamp,
   safeEqual,
   signHmacSha256,
+  snapBodyHash,
+  snapTimestamp,
   verifyNotificationSignature,
+  verifyRsaSha256,
+  verifySnapNotificationSignature,
 } from '../src/utils/signature.js';
 
 describe('signature utils (DOKU Jokul HMAC-SHA256)', () => {
@@ -102,5 +110,100 @@ describe('signature utils (DOKU Jokul HMAC-SHA256)', () => {
     const { privateKey, publicKey } = generateKeyPair();
     expect(privateKey).toContain('PRIVATE KEY');
     expect(publicKey).toContain('PUBLIC KEY');
+  });
+});
+
+describe('SNAP signature utils', () => {
+  it('builds the Get-Token stringToSign as clientId|timestamp', () => {
+    expect(buildSnapTokenStringToSign('CID', '2026-01-01T00:00:00+07:00')).toBe(
+      'CID|2026-01-01T00:00:00+07:00',
+    );
+  });
+
+  it('signs the Get-Token with SHA256withRSA and verifies it', () => {
+    const { privateKey, publicKey } = generateKeyPair();
+    const ts = '2026-01-01T00:00:00+07:00';
+    const { headers, stringToSign } = buildSnapTokenHeaders({
+      clientId: 'CID',
+      timestamp: ts,
+      privateKeyPem: privateKey,
+    });
+    expect(headers['X-CLIENT-KEY']).toBe('CID');
+    expect(headers['X-TIMESTAMP']).toBe(ts);
+    expect(verifyRsaSha256(stringToSign, headers['X-SIGNATURE'], publicKey)).toBe(true);
+  });
+
+  it('builds the SNAP transactional stringToSign in the correct order', () => {
+    const { stringToSign, signature } = buildSnapSignature({
+      method: 'post',
+      endpointUrl: '/snap-adapter/b2b/v1.0/qr/qr-mpm-generate',
+      accessToken: 'TOKEN',
+      body: { a: 1 },
+      timestamp: '2026-01-01T00:00:00+07:00',
+      secretKey: 'secret',
+    });
+    expect(stringToSign).toBe(
+      `POST:/snap-adapter/b2b/v1.0/qr/qr-mpm-generate:TOKEN:${snapBodyHash({ a: 1 })}:2026-01-01T00:00:00+07:00`,
+    );
+    const expected = crypto
+      .createHmac('sha512', 'secret')
+      .update(stringToSign, 'utf8')
+      .digest('base64');
+    expect(signature).toBe(expected);
+  });
+
+  it('builds SNAP transactional headers with the required SNAP headers', () => {
+    const { headers } = buildSnapRequestHeaders({
+      method: 'POST',
+      endpointUrl: '/snap-adapter/b2b/v1.0/qr/qr-mpm-generate',
+      accessToken: 'TOKEN',
+      body: { a: 1 },
+      timestamp: '2026-01-01T00:00:00+07:00',
+      clientId: 'PARTNER',
+      externalId: 'EXT-1',
+      secretKey: 'secret',
+    });
+    expect(headers['X-PARTNER-ID']).toBe('PARTNER');
+    expect(headers['X-EXTERNAL-ID']).toBe('EXT-1');
+    expect(headers['X-SIGNATURE']).toBeTruthy();
+    expect(headers.Authorization).toBe('Bearer TOKEN');
+  });
+
+  it('verifies a SNAP notification (HMAC-SHA512, no Digest in stringToSign)', () => {
+    const secretKey = 'topsecret';
+    const rawBody = JSON.stringify({ originalPartnerReferenceNo: 'INV-1' });
+    const timestamp = '2026-01-01T00:00:00+07:00';
+    const stringToSign = [
+      'POST',
+      '/api/webhooks/doku-snap',
+      '',
+      snapBodyHash(rawBody),
+      timestamp,
+    ].join(':');
+    const signature = crypto
+      .createHmac('sha512', secretKey)
+      .update(stringToSign, 'utf8')
+      .digest('base64');
+    const headers = {
+      'x-partner-id': 'CID',
+      'x-external-id': 'EXT-1',
+      'x-timestamp': timestamp,
+      'x-signature': signature,
+      'request-target': '/api/webhooks/doku-snap',
+    };
+    const { valid } = verifySnapNotificationSignature({ headers, method: 'POST', rawBody, secretKey });
+    expect(valid).toBe(true);
+
+    const bad = verifySnapNotificationSignature({
+      headers: { ...headers, 'x-signature': 'nope' },
+      method: 'POST',
+      rawBody,
+      secretKey,
+    });
+    expect(bad.valid).toBe(false);
+  });
+
+  it('formats SNAP timestamps with a +07:00 offset', () => {
+    expect(snapTimestamp()).toMatch(/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\+07:00$/);
   });
 });

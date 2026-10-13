@@ -16,6 +16,8 @@ const createPaymentSchema = z.object({
   customerEmail: z.string().email().max(120).optional(),
   // "qris" (default) creates a QRIS MPM; "checkout" creates a hosted Checkout page.
   method: z.enum(['qris', 'checkout']).default('qris'),
+  // Direct API flavour for QRIS: non-SNAP (Jokul) or SNAP.
+  flavor: z.enum(['nonsnap', 'snap']).optional(),
 });
 
 const refundSchema = z.object({
@@ -39,6 +41,7 @@ export async function createPayment(req, res, next) {
     }
     const input = parsed.data;
     const invoiceNumber = `${config.doku.invoicePrefix}-${Date.now()}-${nanoid(6).toUpperCase()}`;
+    const flavor = input.method === 'checkout' ? 'nonsnap' : input.flavor || config.doku.apiFlavor;
 
     await txStore.createTransaction({
       invoiceNumber,
@@ -46,6 +49,7 @@ export async function createPayment(req, res, next) {
       amount: { value: input.amount, currency: input.currency },
       description: input.description,
       customerName: input.customerName,
+      apiFlavor: flavor,
       validUntil: new Date(Date.now() + input.validUpToMinutes * 60_000).toISOString(),
     });
 
@@ -68,6 +72,7 @@ export async function createPayment(req, res, next) {
           currency: input.currency,
           description: input.description,
           expiryMinutes: input.validUpToMinutes,
+          flavor,
         });
       }
     } catch (err) {
@@ -169,8 +174,10 @@ export async function queryPayment(req, res, next) {
     const txn = await txStore.getTransaction(req.params.ref);
     if (!txn) return res.status(404).json({ success: false, error: 'NOT_FOUND' });
 
-    const dokuRes = txn.qrContent
-      ? await dokuService.queryQrisTransaction(txn.invoiceNumber, txn.dokuReferenceNo)
+    const isQris = Boolean(txn.qrContent);
+    const flavor = txn.apiFlavor || 'nonsnap';
+    const dokuRes = isQris
+      ? await dokuService.queryQrisTransaction(txn.invoiceNumber, txn.dokuReferenceNo, flavor)
       : await dokuService.queryOrderStatus(txn.invoiceNumber);
 
     const mapped = mapDokuStatus(
@@ -214,7 +221,11 @@ export async function cancelPayment(req, res, next) {
     }
 
     if (txn.qrContent) {
-      await dokuService.cancelQrisTransaction(txn.invoiceNumber, txn.dokuReferenceNo);
+      await dokuService.cancelQrisTransaction(
+        txn.invoiceNumber,
+        txn.dokuReferenceNo,
+        txn.apiFlavor || 'nonsnap',
+      );
     }
     const updated = await txStore.updateTransaction(
       txn.invoiceNumber,
@@ -275,12 +286,17 @@ export async function refundPayment(req, res, next) {
     }
 
     const refundRefNo = `RFD-${Date.now()}-${nanoid(6).toUpperCase()}`;
-    const dokuRes = await dokuService.refundTransaction({
+    const refundInput = {
       partnerRefundNo: refundRefNo,
       originalInvoiceNumber: txn.invoiceNumber,
+      originalReferenceNo: txn.dokuReferenceNo,
       amount: { value: refundAmount, currency: txn.amount.currency },
       reason: parsed.data.reason,
-    });
+    };
+    const dokuRes =
+      txn.apiFlavor === 'snap'
+        ? await dokuService.refundSnapQrisTransaction(refundInput)
+        : await dokuService.refundTransaction(refundInput);
 
     const code = dokuRes.responseCode;
     if (code && !/^(2|SUCCESS)/i.test(String(code))) {

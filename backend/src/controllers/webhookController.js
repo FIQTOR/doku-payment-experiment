@@ -1,7 +1,12 @@
 import config from '../config/index.js';
 import * as txStore from '../store/transactions.js';
 import { mapDokuStatus } from '../services/dokuService.js';
-import { loadKey, verifyNotificationSignature, verifyRsaSha256 } from '../utils/signature.js';
+import {
+  loadKey,
+  verifyNotificationSignature,
+  verifyRsaSha256,
+  verifySnapNotificationSignature,
+} from '../utils/signature.js';
 
 /** True when a non-placeholder secret key is configured. */
 function hasRealSecret() {
@@ -11,6 +16,11 @@ function hasRealSecret() {
 /** True when a DOKU public key file is present for RSA verification. */
 function hasPublicKey() {
   return Boolean(loadKey(config.doku.publicKeyPath));
+}
+
+/** Heuristic: is this a SNAP notification (X-SIGNATURE / X-PARTNER-ID headers)? */
+function isSnapNotification(req) {
+  return Boolean(req.headers['x-signature'] && (req.headers['x-partner-id'] || req.headers['x-external-id']));
 }
 
 /**
@@ -38,15 +48,22 @@ export async function handleDokuNotification(req, res, next) {
       return res.status(401).json({ status: 'UNAUTHORIZED', message: 'Invalid signature' });
     }
 
-    // Prefer the order-level status (authoritative for Checkout), then the
-    // per-channel transaction status, then any top-level status.
+    // Status vocabulary differs by flavour:
+    //   non-SNAP → order.status / transaction.status ("SUCCESS"/"FAILED"/…)
+    //   SNAP     → latestTransactionStatus ("00"/"03"/…)
     const rawStatus =
-      body.order?.status || body.transaction?.status || body.status || '';
+      body.latestTransactionStatus ||
+      body.order?.status ||
+      body.transaction?.status ||
+      body.status ||
+      '';
     const status = mapDokuStatus(rawStatus);
 
     // Prefer the invoice number; fall back to other reference fields.
     const ref =
       body.order?.invoice_number ||
+      body.originalPartnerReferenceNo ||
+      body.partnerReferenceNo ||
       body.invoice_number ||
       body.acquirer?.reference_number ||
       body.channel?.reference_number;
@@ -59,6 +76,7 @@ export async function handleDokuNotification(req, res, next) {
         {
           status,
           dokuReferenceNo:
+            body.originalReferenceNo ||
             body.transaction?.original_request_id ||
             body.acquirer?.reference_number ||
             txn.dokuReferenceNo,
@@ -99,12 +117,23 @@ export async function handleDisbursementNotification(req, res, next) {
   }
 }
 
-/** Verify the inbound webhook signature (best-effort; HMAC or RSA). */
+/** Verify the inbound webhook signature (SNAP HMAC-SHA512, non-SNAP HMAC-SHA256, or RSA). */
 function verifyNotification(req, body) {
   // Prefer raw bytes; fall back to the parsed body only when unavailable.
   const rawBody = req.rawBody ? req.rawBody.toString('utf8') : JSON.stringify(body || {});
 
-  // 1) HMAC-SHA256 (default Jokul scheme) using the shared secret key.
+  // 0) SNAP notifications use X-SIGNATURE + HMAC-SHA512.
+  if (isSnapNotification(req)) {
+    const snap = verifySnapNotificationSignature({
+      headers: req.headers,
+      method: req.method,
+      rawBody,
+      secretKey: config.doku.secretKey,
+    });
+    return { ...snap, componentString: snap.stringToSign };
+  }
+
+  // 1) non-SNAP: HMAC-SHA256 over the Jokul component string.
   const hmac = verifyNotificationSignature({
     headers: req.headers,
     rawBody,

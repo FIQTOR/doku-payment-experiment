@@ -16,7 +16,7 @@ import { isDbEnabled, getTransactionModel, getSequelize } from '../db/sequelize.
  *   amount: { value: number, currency: string },
  *   refundedAmount: number,
  *   status, // PENDING | SUCCESS | FAILED | EXPIRED | CANCELLED | REFUNDED
- *   qrContent, qrUrl, checkoutUrl, validUntil, payer, description, customerName,
+ *   qrContent, qrUrl, checkoutUrl, apiFlavor, validUntil, payer, description, customerName,
  *   createdAt, updatedAt, history[]
  * }
  */
@@ -54,6 +54,7 @@ function rowToTxn(row) {
     qrContent: j.qrContent,
     qrUrl: j.qrUrl,
     checkoutUrl: j.checkoutUrl || null,
+    apiFlavor: j.apiFlavor || 'nonsnap',
     validUntil: j.validUntil ? new Date(j.validUntil).toISOString() : null,
     payer: j.payer || null,
     description: j.description,
@@ -87,6 +88,7 @@ export async function createTransaction(input, { silent = true } = {}) {
     qrContent: null,
     qrUrl: null,
     checkoutUrl: null,
+    apiFlavor: input.apiFlavor || 'nonsnap',
     validUntil: input.validUntil || new Date(Date.now() + 30 * 60_000).toISOString(),
     payer: null,
     description: input.description || 'DOKU payment',
@@ -108,6 +110,7 @@ export async function createTransaction(input, { silent = true } = {}) {
       validUntil: txn.validUntil,
       description: txn.description,
       customerName: txn.customerName,
+      apiFlavor: txn.apiFlavor,
       history: txn.history,
     });
     const result = rowToTxn(created);
@@ -171,6 +174,7 @@ export async function updateTransaction(invoiceNumber, patch, note, { silent = f
     if (patch.qrContent !== undefined) updates.qrContent = patch.qrContent;
     if (patch.qrUrl !== undefined) updates.qrUrl = patch.qrUrl;
     if (patch.checkoutUrl !== undefined) updates.checkoutUrl = patch.checkoutUrl;
+    if (patch.apiFlavor !== undefined) updates.apiFlavor = patch.apiFlavor;
     if (patch.payer !== undefined) updates.payer = patch.payer;
     if (patch.description !== undefined) updates.description = patch.description;
     if (patch.refundedAmount !== undefined) updates.refundedAmount = patch.refundedAmount;

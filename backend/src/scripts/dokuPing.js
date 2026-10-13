@@ -13,7 +13,13 @@
 import axios from 'axios';
 import crypto from 'node:crypto';
 import config from '../config/index.js';
-import { bodyDigest, requestTimestamp, signHmacSha256 } from '../utils/signature.js';
+import {
+  bodyDigest,
+  buildSnapSignature,
+  loadKey,
+  requestTimestamp,
+  signHmacSha256,
+} from '../utils/signature.js';
 
 const ok = (m) => console.log(`  \x1b[32m✓\x1b[0m ${m}`);
 const bad = (m) => console.log(`  \x1b[31m✗\x1b[0m ${m}`);
@@ -67,6 +73,32 @@ async function main() {
   else {
     bad('Signature does not match the expected digest');
     failures++;
+  }
+
+  // ------------------------------------------------------- SNAP signature ---
+  section('SNAP signature (HMAC-SHA512)');
+  const snap = buildSnapSignature({
+    method: 'POST',
+    endpointUrl: '/snap-adapter/b2b/v1.0/qr/qr-mpm-generate',
+    accessToken: 'dummy-token',
+    body,
+    timestamp: '2026-01-01T00:00:00+07:00',
+    secretKey: config.doku.secretKey,
+  });
+  ok(`Built SNAP signature: ${snap.signature.slice(0, 24)}…`);
+
+  const snapPrivateKey = loadKey(config.doku.privateKeyPath);
+  if (snapPrivateKey) {
+    ok(`SNAP private key loaded (${config.doku.privateKeyPath})`);
+    try {
+      crypto.createPrivateKey(snapPrivateKey);
+      ok('Valid RSA private key for SNAP Get-Token (SHA256withRSA)');
+    } catch (e) {
+      bad(`SNAP private key is invalid: ${e.message}`);
+      failures++;
+    }
+  } else {
+    warn(`SNAP private key not found at ${config.doku.privateKeyPath} (run: npm run gen-key)`);
   }
 
   // ------------------------------------------------------- live connectivity ---

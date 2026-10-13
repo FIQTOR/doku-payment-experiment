@@ -17,6 +17,10 @@ const METHODS = [
   { id: 'qris', label: 'QRIS', icon: IconQrcode },
   { id: 'checkout', label: 'Checkout', icon: IconCreditCard },
 ];
+const FLAVORS = [
+  { id: 'nonsnap', label: 'Non-SNAP (Jokul)' },
+  { id: 'snap', label: 'SNAP (BI standard)' },
+];
 
 export default function CreatePaymentForm({ onCreated }) {
   const toast = useToast();
@@ -27,6 +31,7 @@ export default function CreatePaymentForm({ onCreated }) {
     validUpToMinutes: 30,
   });
   const [method, setMethod] = useState('qris');
+  const [flavor, setFlavor] = useState('nonsnap');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
 
@@ -43,6 +48,7 @@ export default function CreatePaymentForm({ onCreated }) {
         customerName: form.customerName,
         validUpToMinutes: Number(form.validUpToMinutes),
         method,
+        flavor: method === 'qris' ? flavor : undefined,
       });
       toast('Payment created — ready to pay.', 'success', 'Transaction created');
       onCreated?.(res.data);
@@ -85,6 +91,34 @@ export default function CreatePaymentForm({ onCreated }) {
             })}
           </div>
         </div>
+
+        {method === 'qris' && (
+          <div>
+            <label className="mb-1.5 block text-sm font-medium text-slate-700">
+              Direct API flavour
+              <span className="ml-1 font-normal text-slate-400">(signature scheme)</span>
+            </label>
+            <div className="grid grid-cols-2 gap-2">
+              {FLAVORS.map((f) => {
+                const active = flavor === f.id;
+                return (
+                  <button
+                    key={f.id}
+                    type="button"
+                    onClick={() => setFlavor(f.id)}
+                    className={`rounded-xl border px-3 py-2 text-xs font-medium transition ${
+                      active
+                        ? 'border-doku-300 bg-doku-50 text-doku-700 ring-2 ring-doku-100'
+                        : 'border-slate-200 bg-white text-slate-600 hover:bg-slate-50'
+                    }`}
+                  >
+                    {f.label}
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+        )}
 
         <div>
           <label className="mb-1.5 flex items-center gap-1.5 text-sm font-medium text-slate-700">
@@ -199,7 +233,10 @@ export default function CreatePaymentForm({ onCreated }) {
           </p>
           <div className="mt-3 flex items-center justify-center gap-1.5 rounded-lg bg-slate-50 px-3 py-2 text-xs text-slate-500">
             <IconBolt size={14} className="text-doku-500" />
-            {method === 'qris' ? 'QRIS MPM' : 'Hosted Checkout'} · valid {form.validUpToMinutes} min
+            {method === 'qris'
+              ? `QRIS MPM · ${flavor === 'snap' ? 'SNAP' : 'Non-SNAP'}`
+              : 'Hosted Checkout'}{' '}
+            · valid {form.validUpToMinutes} min
           </div>
         </div>
         <p className="mt-3 text-center text-xs text-slate-400">

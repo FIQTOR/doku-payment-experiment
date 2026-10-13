@@ -21,11 +21,11 @@ export default function Sidebar({ active, onChange, connected }) {
   return (
     <aside className="flex h-full w-full flex-col gap-2 border-slate-200 bg-white p-4 lg:w-64 lg:border-r">
       {/* Brand */}
-      <div className="mb-2 flex flex-col gap-2 px-2 py-2">
-        <img src={dokuLogo} alt="DOKU" className="h-7 w-auto" />
+      <div className="mb-2 flex items-center gap-3 px-2 py-2">
+        <img src={dokuLogo} alt="DOKU" className="h-10 w-10 shrink-0 rounded-lg" />
         <div>
           <p className="text-sm font-bold leading-tight text-slate-900">Experiment Lab</p>
-          <p className="text-xs text-slate-500">DOKU Jokul API</p>
+          <p className="text-xs text-slate-500">DOKU Direct API</p>
         </div>
       </div>
 

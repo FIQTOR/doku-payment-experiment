@@ -186,6 +186,10 @@ export default function PaymentDetailModal({ open, onClose, transaction, onUpdat
           </div>
           <Row label="Invoice No" value={t.invoiceNumber} mono />
           <Row label="DOKU Ref No" value={t.dokuReferenceNo || '—'} mono />
+          <Row
+            label="API flavour"
+            value={t.qrContent ? (t.apiFlavor === 'snap' ? 'SNAP (QRIS)' : 'Non-SNAP (QRIS)') : 'Non-SNAP (Checkout)'}
+          />
           <Row label="Amount" value={formatIDR(t.amount?.value)} />
           {t.refundedAmount > 0 && (
             <>

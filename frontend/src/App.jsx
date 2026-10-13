@@ -13,7 +13,13 @@ import { useTransactionEvents } from './hooks/useTransactionEvents';
 
 function Dashboard() {
   const toast = useToast();
-  const [tab, setTab] = useState('dashboard');
+  // Initial tab can be deep-linked via ?tab=create|transactions|disbursements|webhook
+  const [tab, setTab] = useState(() => {
+    const t = new URLSearchParams(window.location.search).get('tab');
+    return ['dashboard', 'create', 'transactions', 'disbursements', 'webhook'].includes(t)
+      ? t
+      : 'dashboard';
+  });
   const [transactions, setTransactions] = useState([]);
   const [stats, setStats] = useState(null);
   const [runtimeConfig, setRuntimeConfig] = useState(null);
@@ -39,6 +45,10 @@ function Dashboard() {
         setTransactions(list.data || []);
         setStats(s.data);
         setRuntimeConfig(cfg.data);
+        // Deep-link: ?open=first auto-opens the newest transaction's detail modal.
+        if (new URLSearchParams(window.location.search).get('open') === 'first' && list.data?.[0]) {
+          setSelected(list.data.find((t) => t.history?.length > 1) || list.data[0]);
+        }
       } catch {
         toast('Backend unreachable. Is the Express server running on :4010?', 'error', 'Connection error');
       } finally {
