@@ -9,6 +9,7 @@
     "dev": "node --watch src/server.js",
     "gen-key": "node src/utils/genKeyPair.js",
     "doku:ping": "node src/scripts/dokuPing.js",
+    "seed": "node tools/seed-demo.mjs",
     "test": "vitest run",
     "test:watch": "vitest"
   },

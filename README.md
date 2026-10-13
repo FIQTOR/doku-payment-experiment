@@ -154,23 +154,47 @@ curl -X POST http://localhost:4010/api/payments \
 git clone https://github.com/FIQTOR/doku-payment-experiment.git
 cd doku-payment-experiment
 
-# 2. Install root + workspaces
+# 2. Install deps + create backend/.env from .env.example (one command)
 npm install
-npm run install:all
+npm run setup
 
-# 3. Configure the backend
-cp backend/.env.example backend/.env
-npm run keygen                # optional: generates an RSA keypair in backend/certs
-
-# 4. Run everything (backend :4010 + frontend :5174)
+# 3. Run everything (backend :4010 + frontend :5174)
 npm run dev
 ```
 
 Then open **<http://localhost:5174>** 🎉
 
-> ✅ Because `DOKU_MOCK_MODE=true` by default, no DOKU credentials are needed.
-> Create payments, "pay" them via the simulation controls, and fire webhooks —
-> entirely offline.
+> ✅ **Zero configuration needed.** `npm run setup` copies
+> [`backend/.env.example`](backend/.env.example) → `backend/.env`, and
+> `DOKU_MOCK_MODE=true` is the default — so no DOKU credentials are required.
+> Create payments, "pay" them via the simulation controls, and fire webhooks,
+> entirely offline. (The backend also auto-creates `.env` on first boot if it's
+> missing.)
+
+**Optional extras:**
+
+```bash
+npm run keygen     # generate an RSA keypair (needed for live SNAP Get-Token)
+npm run doku:ping  # self-test credentials + signatures (both flavours)
+npm run seed       # seed sample transactions (backend must be running)
+npm test           # run the backend test suite
+```
+
+<details>
+<summary>Manual setup (equivalent to <code>npm run setup</code>)</summary>
+
+```bash
+npm install
+npm run install:all                          # install backend + frontend workspaces
+cp backend/.env.example backend/.env         # do this if you skipped npm run setup
+```
+
+</details>
+
+> 🔑 **Going live?** Edit [`backend/.env`](backend/.env.example) with your DOKU
+> **Client-Id** + **Secret Key** (sandbox: `https://api-sandbox.doku.com`) and
+> set `DOKU_MOCK_MODE=false`. See
+> [`docs/SANDBOX-SETUP.md`](docs/SANDBOX-SETUP.md).
 
 ---
 
@@ -431,10 +455,13 @@ doku-payment-experiment/
 
 | Command | Description |
 | --- | --- |
+| `npm run setup` | Install workspaces **and** create `backend/.env` from the example |
+| `npm run install:all` | Install backend + frontend dependencies only |
 | `npm run dev` | Run backend (:4010) + frontend (:5174) together |
 | `npm run dev:backend` / `npm run dev:frontend` | Run one side only |
 | `npm run keygen` | Generate an RSA keypair into `backend/certs/` |
-| `npm run doku:ping` | Validate config + signature + connectivity |
+| `npm run doku:ping` | Validate config + signatures (SNAP & non-SNAP) + connectivity |
+| `npm run seed` | Seed sample transactions (backend must be running) |
 | `npm test` | Run the backend test suite |
 | `npm run build` | Build the frontend for production |
 | `npm run lint` | Lint the frontend |

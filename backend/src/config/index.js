@@ -1,4 +1,25 @@
-import 'dotenv/config';
+import fs from 'node:fs';
+import path from 'node:path';
+import { fileURLToPath } from 'node:url';
+
+/**
+ * First-run convenience: if no `backend/.env` exists yet (fresh clone), copy it
+ * from `.env.example` so the app boots with sane, credential-free defaults.
+ */
+const backendRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../..');
+const envPath = path.join(backendRoot, '.env');
+const envExamplePath = path.join(backendRoot, '.env.example');
+if (!fs.existsSync(envPath) && fs.existsSync(envExamplePath)) {
+  try {
+    fs.copyFileSync(envExamplePath, envPath);
+    console.log('[config] Created backend/.env from .env.example (first run).');
+  } catch {
+    /* read-only fs — fall back to defaults */
+  }
+}
+
+// Load env AFTER ensuring the file exists.
+await import('dotenv/config');
 
 /**
  * Centralised configuration loader for the DOKU payment backend.
