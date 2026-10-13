@@ -20,14 +20,14 @@ export default function Modal({ open, onClose, title, subtitle, icon: Icon, chil
   return (
     <div className="fixed inset-0 z-40 flex items-end justify-center p-0 sm:items-center sm:p-4">
       <div
-        className="absolute inset-0 bg-slate-900/40 backdrop-blur-sm"
+        className="absolute inset-0 z-0 bg-slate-900/40 backdrop-blur-sm"
         onClick={onClose}
         aria-hidden
       />
       <div
         role="dialog"
         aria-modal="true"
-        className={`animate-fade-in-up relative w-full ${widths[size]} overflow-hidden rounded-t-2xl bg-white shadow-xl sm:rounded-2xl`}
+        className={`animate-fade-in-up relative z-10 w-full ${widths[size]} overflow-hidden rounded-t-2xl bg-white shadow-xl sm:rounded-2xl`}
       >
         <div className="flex items-start gap-3 border-b border-slate-100 p-5">
           {Icon && (
