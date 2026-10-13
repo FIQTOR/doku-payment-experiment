@@ -8,7 +8,9 @@ process.env.DB_ENABLED = 'true';
 process.env.DB_DIALECT = 'sqlite';
 process.env.DB_STORAGE = ':memory:';
 
-const { initDb, closeDb, isDbEnabled, getTransactionModel } = await import('../src/db/sequelize.js');
+const { initDb, closeDb, isDbEnabled, getTransactionModel, disableDb } = await import(
+  '../src/db/sequelize.js'
+);
 const store = await import('../src/store/transactions.js');
 
 describe('store (sqlite backend)', () => {
@@ -70,5 +72,23 @@ describe('store (sqlite backend)', () => {
     const s = await store.stats();
     expect(s.total).toBeGreaterThanOrEqual(1);
     expect(s.backend).toBe('sqlite');
+  });
+
+  // Keep this LAST: it flips the global DB kill-switch used by isDbEnabled().
+  it('disableDb() truly falls back to the in-memory store', async () => {
+    expect(isDbEnabled()).toBe(true);
+    expect(store.usingDb()).toBe(true);
+
+    disableDb();
+
+    expect(isDbEnabled()).toBe(false);
+    expect(store.usingDb()).toBe(false);
+    // Writes now go to the in-memory map, not Sequelize.
+    const txn = await store.createTransaction({
+      invoiceNumber: 'INV-MEM-1',
+      amount: { value: 1234, currency: 'IDR' },
+    });
+    expect(txn).not.toBeNull();
+    expect((await store.stats()).backend).toBe('memory');
   });
 });

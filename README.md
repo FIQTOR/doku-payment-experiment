@@ -6,7 +6,7 @@
   <a href="LICENSE"><img src="https://img.shields.io/badge/license-MIT-blue.svg" alt="License: MIT"></a>
   <img src="https://img.shields.io/badge/node-%3E%3D20-brightgreen.svg" alt="Node >= 20">
   <a href="https://github.com/FIQTOR/doku-payment-experiment/actions/workflows/ci.yml"><img src="https://github.com/FIQTOR/doku-payment-experiment/actions/workflows/ci.yml/badge.svg" alt="CI"></a>
-  <img src="https://img.shields.io/badge/tests-71%20passing-success.svg" alt="Tests">
+  <img src="https://img.shields.io/badge/tests-78%20passing-success.svg" alt="Tests">
   <img src="https://img.shields.io/badge/express-4.x-000000.svg" alt="Express 4">
   <img src="https://img.shields.io/badge/react-19-61dafb.svg" alt="React 19">
   <img src="https://img.shields.io/badge/vite-8-646cff.svg" alt="Vite 8">
@@ -58,7 +58,7 @@
 | --- | --- |
 | **Backend** | Express.js REST API · **DOKU Direct API in both flavours** — non-SNAP (Jokul **HMAC-SHA256**) *and* **SNAP** (**HMAC-SHA512** transactional + **SHA256withRSA** Get-Token) · QRIS MPM + **Checkout** create · query / cancel · **refund** · **bank disbursement** · webhook receiver with signature verification · Server-Sent Events for live updates · zod validation · rate limiting + helmet · **in-memory or MySQL (Sequelize)** storage |
 | **Frontend** | React 19 + Vite 8 + **TailwindCSS v4** + **Tabler Icons** · dashboard with live stats · payment creator with QR preview + **SNAP / non-SNAP toggle** · filterable transaction list · detail modal (QR / hosted checkout / timeline / query / cancel / refund / simulation) · **disbursement** tab (bank inquiry + transfer) · webhook tester |
-| **DX** | **Mock mode** (no network) · **`npm run doku:ping`** self-test · keypair generator · **71 automated tests** (Vitest + Supertest) · Docker Compose · hot reload · CI workflow |
+| **DX** | **Mock mode** (no network) · **`npm run doku:ping`** self-test · keypair generator · **78 automated tests** (Vitest + Supertest) · Docker Compose · hot reload · CI workflow |
 
 ---
 
@@ -475,7 +475,7 @@ cd backend
 npm test
 ```
 
-**71 tests** across 5 files:
+**78 tests** across 5 files:
 
 - `signature.test.js` — Jokul component-string + HMAC-SHA256 signing & webhook verification
 - `store.test.js` — in-memory store, events, history, stats

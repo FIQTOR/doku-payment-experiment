@@ -10,10 +10,18 @@ import { defineTransaction } from './models/transaction.js';
  */
 let sequelize = null;
 let Transaction = null;
+// Runtime kill-switch so a failed connection can truly fall back to in-memory.
+let disabled = false;
 
 export function isDbEnabled() {
+  if (disabled) return false;
   const needsHost = config.db.dialect !== 'sqlite';
   return Boolean(config.db.enabled && (!needsHost || config.db.host));
+}
+
+/** Force the store back to in-memory (used when the DB connection fails). */
+export function disableDb() {
+  disabled = true;
 }
 
 export function getSequelize() {

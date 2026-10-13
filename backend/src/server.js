@@ -10,7 +10,7 @@ import webhooksRouter from './routes/webhooks.js';
 import { errorHandler, notFound } from './middlewares/error.js';
 import { rawBodySaver } from './middlewares/rawBody.js';
 import { store } from './store/transactions.js';
-import { initDb, isDbEnabled, storageLabel } from './db/sequelize.js';
+import { disableDb, initDb, isDbEnabled, storageLabel } from './db/sequelize.js';
 
 const app = express();
 
@@ -110,7 +110,7 @@ export async function start() {
     } catch (err) {
       console.error('  ✖  MySQL connection failed:', err.message);
       console.error('     Falling back to the in-memory store.');
-      process.env.DB_ENABLED = 'false';
+      disableDb();
     }
   } else {
     console.log('  ➜  Storage:  in-memory (set DB_ENABLED=true for MySQL)');

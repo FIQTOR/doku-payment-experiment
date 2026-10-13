@@ -69,11 +69,30 @@ describe('mapDokuStatus', () => {
     expect(mapDokuStatus('refunded')).toBe('REFUNDED');
   });
 
-  it('maps QRIS numeric codes', () => {
+  it('maps SNAP numeric codes (default flavour)', () => {
     expect(mapDokuStatus('00')).toBe('SUCCESS');
-    expect(mapDokuStatus('01')).toBe('FAILED');
-    expect(mapDokuStatus('02')).toBe('PENDING');
-    expect(mapDokuStatus('03')).toBe('EXPIRED');
+    expect(mapDokuStatus('03')).toBe('PENDING');
+    expect(mapDokuStatus('04')).toBe('REFUNDED');
+    expect(mapDokuStatus('05')).toBe('CANCELLED');
+    expect(mapDokuStatus('06')).toBe('FAILED');
+  });
+
+  it('maps legacy non-SNAP QRIS numeric codes when flavor=nonsnap', () => {
+    expect(mapDokuStatus('00', 'nonsnap')).toBe('SUCCESS');
+    expect(mapDokuStatus('01', 'nonsnap')).toBe('FAILED');
+    expect(mapDokuStatus('02', 'nonsnap')).toBe('PENDING');
+    expect(mapDokuStatus('03', 'nonsnap')).toBe('EXPIRED');
+  });
+
+  it('disambiguates the 03/04 collision by flavour', () => {
+    expect(mapDokuStatus('03', 'snap')).toBe('PENDING');
+    expect(mapDokuStatus('03', 'nonsnap')).toBe('EXPIRED');
+    expect(mapDokuStatus('04', 'snap')).toBe('REFUNDED');
+  });
+
+  it('maps word statuses the same regardless of flavour', () => {
+    expect(mapDokuStatus('VOIDED')).toBe('CANCELLED');
+    expect(mapDokuStatus('EXPIRED', 'nonsnap')).toBe('EXPIRED');
   });
 
   it('returns null for unknown/absent values', () => {

@@ -6,6 +6,7 @@ import {
   IconLoader2,
   IconCode,
   IconCheck,
+  IconAlertTriangle,
 } from '@tabler/icons-react';
 import { useToast } from './Toast';
 
@@ -26,8 +27,11 @@ const SAMPLE = `{
   }
 }`;
 
-export default function WebhookTester({ defaultRef }) {
+export default function WebhookTester({ defaultRef, config }) {
   const toast = useToast();
+  // When a real secret key is configured the backend enforces signature
+  // verification, so an unsigned test payload will be rejected with 401.
+  const signatureEnforced = Boolean(config && config.hasSecretKey && !config.mockMode);
   const [payload, setPayload] = useState(SAMPLE);
   const [sending, setSending] = useState(false);
   const [response, setResponse] = useState(null);
@@ -127,6 +131,18 @@ export default function WebhookTester({ defaultRef }) {
           >
             <IconCheck size={14} /> Use latest invoice: {defaultRef.slice(0, 22)}…
           </button>
+        )}
+
+        {signatureEnforced && (
+          <div className="mt-3 flex items-start gap-2 rounded-xl bg-amber-50 px-3 py-2.5 text-xs text-amber-800 ring-1 ring-inset ring-amber-200">
+            <IconAlertTriangle size={15} className="mt-0.5 shrink-0" />
+            <span>
+              Signature verification is <b>enforced</b> (a real secret key is configured), so this
+              unsigned test payload will be rejected with <span className="font-mono">401</span>.
+              Set <span className="font-mono">DOKU_MOCK_MODE=true</span> or send a signed request to
+              test callbacks locally.
+            </span>
+          </div>
         )}
       </div>
 

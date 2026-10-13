@@ -56,8 +56,11 @@ export const config = {
     // requests (SHA256withRSA). Generate with `npm run gen-key`.
     privateKeyPath: process.env.DOKU_PRIVATE_KEY_PATH,
     // SNAP partner identifier (the client id sent as X-PARTNER-ID).
-    // Defaults to clientId when not set.
-    partnerId: process.env.DOKU_PARTNER_ID || process.env.DOKU_CLIENT_ID,
+    // Defaults to clientId, then the placeholder, so it is never undefined.
+    partnerId:
+      process.env.DOKU_PARTNER_ID ||
+      process.env.DOKU_CLIENT_ID ||
+      'BRN-0000-000000000000000000',
     // CHANNEL-ID sent with SNAP QRIS requests (H2H for host-to-host).
     channelId: process.env.DOKU_CHANNEL_ID || 'H2H',
     // Default Direct API flavour: 'nonsnap' | 'snap'. Can be overridden per request.

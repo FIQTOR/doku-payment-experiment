@@ -529,38 +529,52 @@ export const dokuService = new DokuService();
 
 /**
  * Map a DOKU transaction status value to our internal status.
- * DOKU uses several vocabularies depending on the product:
- *   - Checkout order status:  SUCCESS | FAILED | PENDING | EXPIRED | REFUNDED
- *   - QRIS `latestTransactionStatus`: "00" success, "01" failed, "02" pending, "03" expired
- * Returns null when the status is unknown/absent.
+ *
+ * DOKU uses different vocabularies per product/flavour:
+ *   - Word statuses (Checkout order, non-SNAP notification): SUCCESS | FAILED |
+ *     PENDING | EXPIRED | CANCELLED | REFUNDED | VOIDED
+ *   - SNAP numeric codes:   00=SUCCESS, 03=PENDING, 04=REFUNDED, 05=CANCELLED, 06=FAILED
+ *   - non-SNAP legacy QRIS: 00=SUCCESS, 01=FAILED,  02=PENDING, 03=EXPIRED
+ *
+ * The numeric codes 03/04 collide between the SNAP and legacy vocabularies, so
+ * pass `flavor` ('snap' | 'nonsnap') to disambiguate. When omitted, the SNAP
+ * interpretation is used for numeric codes (the modern standard).
+ *
+ * @param {string|number} raw
+ * @param {'snap'|'nonsnap'} [flavor]
+ * @returns {string|null} internal status, or null when unknown/absent
  */
-export function mapDokuStatus(raw) {
+export function mapDokuStatus(raw, flavor = 'snap') {
   if (raw === undefined || raw === null || raw === '') return null;
   const s = String(raw).toUpperCase();
-  const map = {
+
+  // Word-based statuses are unambiguous.
+  const words = {
     SUCCESS: 'SUCCESS',
     SUCCESSFUL: 'SUCCESS',
     PAID: 'SUCCESS',
     SETTLED: 'SUCCESS',
-    '00': 'SUCCESS',
     FAILED: 'FAILED',
     FAILURE: 'FAILED',
     DENIED: 'FAILED',
-    '01': 'FAILED',
     EXPIRED: 'EXPIRED',
-    '03': 'EXPIRED',
     CANCELLED: 'CANCELLED',
     CANCELED: 'CANCELLED',
     VOID: 'CANCELLED',
-    '04': 'CANCELLED',
+    VOIDED: 'CANCELLED',
     PENDING: 'PENDING',
     INITIATED: 'PENDING',
     PROCESSING: 'PENDING',
-    '02': 'PENDING',
     REFUNDED: 'REFUNDED',
     REFUND: 'REFUNDED',
   };
-  return map[s] || null;
+  if (words[s]) return words[s];
+
+  // Numeric codes depend on the flavour (03/04 collide).
+  const snapCodes = { '00': 'SUCCESS', '03': 'PENDING', '04': 'REFUNDED', '05': 'CANCELLED', '06': 'FAILED' };
+  const legacyCodes = { '00': 'SUCCESS', '01': 'FAILED', '02': 'PENDING', '03': 'EXPIRED' };
+  const codes = flavor === 'nonsnap' ? legacyCodes : snapCodes;
+  return codes[s] || null;
 }
 
 export default dokuService;

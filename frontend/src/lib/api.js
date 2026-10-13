@@ -28,7 +28,6 @@ async function request(path, options = {}) {
 
 export const api = {
   // Server + config introspection
-  health: () => request('/payments/stats'),
   getConfig: () => request('/webhooks/config'),
 
   // Payments

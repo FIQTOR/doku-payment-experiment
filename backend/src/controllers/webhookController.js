@@ -57,7 +57,7 @@ export async function handleDokuNotification(req, res, next) {
       body.transaction?.status ||
       body.status ||
       '';
-    const status = mapDokuStatus(rawStatus);
+    const status = mapDokuStatus(rawStatus, isSnapNotification(req) ? 'snap' : 'nonsnap');
 
     // Prefer the invoice number; fall back to other reference fields.
     const ref =
@@ -83,6 +83,21 @@ export async function handleDokuNotification(req, res, next) {
           payer: body.customer || body.channel?.payer || txn.payer,
         },
         `Webhook: ${rawStatus} (verified=${valid})`,
+      );
+    } else if (!ref) {
+      // No reference at all — nothing we can correlate. Log it loudly.
+      console.warn('[webhook] notification without a reference number; ignored.');
+    } else if (!txn) {
+      // Unknown invoice. Return 404 so DOKU can retry / surface the mismatch
+      // instead of silently accepting a notification we cannot apply.
+      console.warn(`[webhook] unknown invoice "${ref}"; no transaction to update.`);
+      return res
+        .status(404)
+        .json({ status: 'NOT_FOUND', message: `Unknown invoice: ${ref}` });
+    } else if (!status) {
+      // Known invoice but unrecognised status code — ack but warn so it is visible.
+      console.warn(
+        `[webhook] unmapped status "${rawStatus}" for invoice "${ref}"; transaction unchanged.`,
       );
     }
 

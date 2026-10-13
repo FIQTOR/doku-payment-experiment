@@ -176,7 +176,9 @@ function Dashboard() {
 
           {tab === 'disbursements' && <DisbursementForm />}
 
-          {tab === 'webhook' && <WebhookTester defaultRef={latestRef} />}
+          {tab === 'webhook' && (
+            <WebhookTester defaultRef={latestRef} config={runtimeConfig} />
+          )}
         </div>
 
         <footer className="border-t border-slate-100 px-4 py-6 text-center text-xs text-slate-400 lg:px-8">

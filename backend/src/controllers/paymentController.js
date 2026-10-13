@@ -185,9 +185,18 @@ export async function queryPayment(req, res, next) {
         dokuRes.transaction?.status ||
         dokuRes.order?.status ||
         dokuRes.status,
+      flavor,
     );
+
+    // Terminal states we own locally must never be downgraded by a status poll:
+    // DOKU reports the *payment* outcome and knows nothing about a refund/void
+    // we already applied. So ignore anything that would move us out of them.
+    const TERMINAL_OWNED = ['REFUNDED', 'CANCELLED'];
+    const isDowngrade =
+      TERMINAL_OWNED.includes(txn.status) && mapped && mapped !== txn.status;
+
     let latest = txn;
-    if (mapped && mapped !== txn.status) {
+    if (mapped && mapped !== txn.status && !isDowngrade) {
       latest =
         (await txStore.updateTransaction(
           txn.invoiceNumber,

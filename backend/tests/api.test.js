@@ -222,6 +222,27 @@ describe('API integration (mock mode)', () => {
       const r3 = await request(app).post(`/api/payments/${ref}/refund`).send({ amount: 1 });
       expect(r3.status).toBe(409);
     });
+
+    it('does not downgrade a REFUNDED transaction when querying status', async () => {
+      const created = await createPayment({ amount: 20000 });
+      const ref = created.body.data.invoiceNumber;
+      await request(app).post(`/api/payments/${ref}/simulate`).send({ status: 'SUCCESS' });
+      await request(app).post(`/api/payments/${ref}/refund`).send({});
+
+      // The mock query reports SUCCESS (payment outcome); must NOT revert REFUNDED.
+      const res = await request(app).post(`/api/payments/${ref}/query`);
+      expect(res.status).toBe(200);
+      expect(res.body.data.transaction.status).toBe('REFUNDED');
+    });
+
+    it('does not un-cancel a CANCELLED transaction when querying status', async () => {
+      const created = await createPayment({ amount: 20000 });
+      const ref = created.body.data.invoiceNumber;
+      await request(app).post(`/api/payments/${ref}/cancel`);
+      const res = await request(app).post(`/api/payments/${ref}/query`);
+      expect(res.status).toBe(200);
+      expect(res.body.data.transaction.status).toBe('CANCELLED');
+    });
   });
 
   describe('stats', () => {
@@ -291,6 +312,14 @@ describe('API integration (mock mode)', () => {
 
       const txn = await request(app).get(`/api/payments/${ref}`);
       expect(txn.body.data.status).toBe('SUCCESS');
+    });
+
+    it('returns 404 for a signed notification with an unknown invoice', async () => {
+      const payload = { order: { invoice_number: 'INV-DOES-NOT-EXIST', status: 'SUCCESS' } };
+      const { rawBody, headers } = signedWebhook(payload);
+      const res = await request(app).post('/api/webhooks/doku').set(headers).send(rawBody);
+      expect(res.status).toBe(404);
+      expect(res.body.status).toBe('NOT_FOUND');
     });
 
     it('acknowledges a signed disbursement notification', async () => {

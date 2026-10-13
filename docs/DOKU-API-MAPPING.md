@@ -134,22 +134,50 @@ is skipped.
 
 ## 4. Status mapping
 
-`mapDokuStatus()` normalises all vocabularies to internal statuses:
+`mapDokuStatus(raw, flavor = 'snap')` normalises DOKU's vocabularies to internal
+statuses. **Word** statuses are unambiguous; **numeric** codes depend on the
+flavour because `03`/`04` collide.
+
+### Word statuses (any flavour)
 
 | DOKU value | Internal |
 | --- | --- |
-| `SUCCESS`, `SUCCESSFUL`, `PAID`, `SETTLED`, `"00"` | `SUCCESS` |
-| `FAILED`, `FAILURE`, `DENIED`, `"06"`, `"01"` | `FAILED` |
-| `EXPIRED`, `"03"`*(pending in SNAP — see note)* | `EXPIRED` |
-| `CANCELLED`, `CANCELED`, `VOID`, `"05"` | `CANCELLED` |
-| `PENDING`, `INITIATED`, `PROCESSING`, `"02"` | `PENDING` |
-| `REFUNDED`, `REFUND`, `"04"` | `REFUNDED` |
+| `SUCCESS`, `SUCCESSFUL`, `PAID`, `SETTLED` | `SUCCESS` |
+| `FAILED`, `FAILURE`, `DENIED` | `FAILED` |
+| `EXPIRED` | `EXPIRED` |
+| `CANCELLED`, `CANCELED`, `VOID`, `VOIDED` | `CANCELLED` |
+| `PENDING`, `INITIATED`, `PROCESSING` | `PENDING` |
+| `REFUNDED`, `REFUND` | `REFUNDED` |
 
-> **Note:** SNAP uses `03` for *pending* while the non-SNAP QRIS legacy uses `03`
-> for *expired*. The mapper accepts both `"03"` → `EXPIRED` (legacy) is
-> intentionally avoided in SNAP notification handling, which reads
-> `latestTransactionStatus` directly; adjust `mapDokuStatus` if your SNAP account
-> emits other codes.
+### Numeric codes — SNAP (`flavor: 'snap'`, the default)
+
+| Code | Internal |
+| --- | --- |
+| `00` | `SUCCESS` |
+| `03` | `PENDING` |
+| `04` | `REFUNDED` |
+| `05` | `CANCELLED` |
+| `06` | `FAILED` |
+
+### Numeric codes — legacy non-SNAP QRIS (`flavor: 'nonsnap'`)
+
+| Code | Internal |
+| --- | --- |
+| `00` | `SUCCESS` |
+| `01` | `FAILED` |
+| `02` | `PENDING` |
+| `03` | `EXPIRED` |
+
+> **Note on the `03`/`04` collision:** SNAP uses `03` for *pending* and `04` for
+> *refunded*, while the legacy non-SNAP QRIS uses `03` for *expired*. Pass the
+> flavour so the correct interpretation is applied — `queryPayment` uses the
+> transaction's stored `apiFlavor`, and the webhook handler detects SNAP from the
+> request headers. Unmapped codes return `null`.
+
+> **Terminal states are protected:** a `POST /:ref/query` never downgrades a
+> `REFUNDED` or `CANCELLED` transaction back to a payment status, since DOKU only
+> reports the original payment outcome and knows nothing about a refund/void we
+> applied locally.
 
 ---
 
